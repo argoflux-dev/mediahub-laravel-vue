@@ -1,8 +1,0 @@
-# React / Vite / TypeScript
-node_modules/
-dist/
-dist-ssr/
-hot
-*.local
-.vite/
-*.tsbuildinfo
