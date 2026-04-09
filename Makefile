@@ -1,0 +1,411 @@
+.PHONY: help build up down restart logs shell composer artisan npm test clean install setup
+
+# Color output
+# YELLOW := \033
+# GREEN := \033
+# RED := \033
+# BLUE := \033
+# NC := \033
+
+# No Color
+YELLOW :=
+GREEN :=
+RED :=
+BLUE :=
+NC :=
+
+# Docker Compose file path
+COMPOSE_FILE := docker-compose.yml
+
+# Load .env file
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
+SHELL := /bin/bash
+
+help: ## Show this help message
+	@echo '$(YELLOW)Available commands:$(NC)'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+
+info: ## Show system information
+	@echo "$(GREEN)============================================$(NC)"
+	@echo "$(YELLOW)Docker Compose Version:$(NC)"
+	@docker compose version
+	@echo ""
+	@echo "$(YELLOW)Container Status:$(NC)"
+	@docker compose -f $(COMPOSE_FILE) ps
+	@echo ""
+	@echo "$(YELLOW)Access URLs:$(NC)"
+	@echo "  $(BLUE)Application:$(NC)  https:$(APP_URL)"
+	@echo "  $(BLUE)Vite Dev:$(NC)     http://localhost:5174"
+	@echo "$(GREEN)============================================$(NC)"
+
+#++++++++++++++++++++++ Assembly and installation +++++++++++++++++++++++++++
+
+install: ## Initial project installation (complete setup)
+	@echo "$(YELLOW)Starting complete project installation...$(NC)"
+	@make setup
+	@make dbuild
+# 	@make init-project
+	@make dup
+	@echo "$(YELLOW)Waiting for containers to be ready...$(NC)"
+	@sleep 10
+# 	@make permissions
+	@make composer-install
+	@make npm-install
+	@make key-generate
+# 	@make seed-db
+	@make storage-link
+	@make start-vite
+	@echo "$(GREEN)============================================$(NC)"
+	@echo "$(GREEN)Installation complete!$(NC)"
+	@echo "$(YELLOW)Access points:$(NC)"
+	@echo "  $(BLUE)Api:$(NC) https:$(API_URL)"
+	@echo "  $(BLUE)Vite Dev:$(NC)    https://localhost:5174"
+	@echo "$(GREEN)============================================$(NC)"
+
+setup: ## Setup environment file
+	@if [ ! -f .env ]; then \
+		echo "$(YELLOW)Creating .env file...$(NC)"; \
+		cp .env.example .env; \
+		echo "$(GREEN).env file created$(NC)"; \
+	else \
+		echo "$(BLUE).env file already exists$(NC)"; \
+	fi
+
+dev: ## Start development environment
+	@echo "$(YELLOW)Starting development environment...$(NC)"
+	@make dup
+	@echo "$(GREEN)============================================$(NC)"
+	@echo "$(GREEN)Development environment started!$(NC)"
+	@echo "$(YELLOW)Access points:$(NC)"
+	@echo "  $(BLUE)Api:$(NC) https:$(API_URL)"
+	@echo "  $(BLUE)Vite Dev:$(NC)    https:$(APP_URL):5174"
+	@echo "$(GREEN)============================================$(NC)"
+
+fbuild: ## Build assets for production
+	@echo "$(YELLOW)Building assets for production...$(NC)"
+	rm -rf frontend/dist frontend/hot
+	@docker compose -f $(COMPOSE_FILE) --profile dev up -d app
+	@docker compose -f $(COMPOSE_FILE) exec app npm run build
+	@docker compose -f $(COMPOSE_FILE) stop app
+	@echo "$(GREEN)Production build complete!$(NC)"
+	@echo "$(BLUE)Built files are in frontend/dist/$(NC)"
+
+build: ## Full production build (composer + npm)
+	@echo "$(YELLOW)Starting full production build...$(NC)"
+	@make composer-install
+	@make fbuild
+	@make optimize
+	@echo "$(GREEN)============================================$(NC)"
+	@echo "$(GREEN)Production build complete!$(NC)"
+	@echo "$(YELLOW)Built assets:$(NC) frontend/dist/"
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Deploy files to production server"
+	@echo "  2. Run migrations: make migrate"
+	@echo "  3. Clear cache: make cache-clear"
+	@echo "$(GREEN)============================================$(NC)"
+
+breeze-install: ## Install Laravel Breeze with Vue
+	@echo "$(YELLOW)Installing Laravel Breeze...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api composer require laravel/breeze --dev
+	docker compose -f $(COMPOSE_FILE) exec api php artisan breeze:install vue
+	docker compose -f $(COMPOSE_FILE) exec app npm install --legacy-peer-deps
+	docker compose -f $(COMPOSE_FILE) exec app npm run build
+	@echo "$(GREEN)Breeze with Vue installed successfully!$(NC)"
+
+key-generate: ## Generate application key
+	@echo "$(YELLOW)Generating application key...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan key:generate
+	@echo "$(GREEN)Application key generated!$(NC)"
+
+storage-link: ## Create storage symbolic link
+	@echo "$(YELLOW)Creating storage link...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan storage:link
+	@echo "$(GREEN)Storage link created!$(NC)"
+
+permissions: ## Fix storage and cache permissions
+	@echo "$(YELLOW)Fixing permissions...$(NC)"
+	@chmod +x scripts/setup-permissions.sh
+	@./scripts/setup-permissions.sh
+	@echo "$(GREEN)Permissions fixed!$(NC)"
+
+# init-project: ## Project env and file structure initialisation
+# 	@echo "$(YELLOW)Project env and file structure initialisation...$(NC)"
+# 	@chmod +x scripts/init-project.sh
+# 	@./scripts/init-project.sh
+# 	@echo "$(GREEN)Project successfully initialized!$(NC)"
+
+# init-scripts: ## Make all scripts executable
+# 	@echo "$(YELLOW)Making scripts executable...$(NC)"
+# 	@chmod +x scripts/*.sh
+# 	@echo "$(GREEN)Scripts are now executable!$(NC)"
+
+#++++++++++++++++++++++ Docker +++++++++++++++++++++++++++
+
+ps: ## Show running containers
+	@docker compose -f $(COMPOSE_FILE) ps
+
+stats: ## Show container resource usage
+	@docker stats --no-stream
+
+dbuild: ## Build Docker containers
+	@echo "$(YELLOW)Building Docker containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) build --no-cache
+
+dbuild-quick: ## Build Docker containers (with cache)
+	@echo "$(YELLOW)Building Docker containers (quick)...$(NC)"
+	docker compose -f $(COMPOSE_FILE) build
+
+dup: ## Start Docker containers in dev mode
+	@echo "$(YELLOW)Starting Docker containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) --profile dev up -d
+	@docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
+	@echo "$(GREEN)Containers started!$(NC)"
+	@make ps
+
+pup: ## Start Docker containers in prod mode
+	@echo "$(YELLOW)Starting Docker containers...$(NC)"
+	rm -rf public/hot
+	docker compose -f $(COMPOSE_FILE) --profile prod up -d
+	@echo "$(GREEN)Containers started!$(NC)"
+	@make ps
+
+ddown: ## Stop Docker containers
+	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) --profile dev down
+	@echo "$(GREEN)Containers stopped!$(NC)"
+
+pdown: ## Stop Docker containers
+	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
+	docker compose -f $(COMPOSE_FILE) --profile prod down
+	@echo "$(GREEN)Containers stopped!$(NC)"
+
+down-v: ## Stop and remove all containers with volumes
+	@echo "$(YELLOW)Stopping containers and removing volumes...$(NC)"
+	docker compose -f $(COMPOSE_FILE) down -v
+	@echo "$(GREEN)Containers and volumes removed!$(NC)"
+
+restart: ## Restart Docker containers
+	@echo "$(YELLOW)Restarting containers...$(NC)"
+	@make down
+	@make up
+
+drestart: ## Restart Docker containers - development mode
+	@echo "$(YELLOW)Restarting containers - development mode...$(NC)"
+	@make ddown
+	@make dup
+
+prestart: ## Restart Docker containers - production mode
+	@echo "$(YELLOW)Restarting containers - production mode...$(NC)"
+	@make pdown
+	@make pup
+
+volumes-list: ## List all project volumes
+	@echo "$(YELLOW)Project volumes:$(NC)"
+	@docker volume ls | grep infrastructure || echo "No volumes found"
+
+volumes-prune: ## Remove unused volumes (careful!)
+	@echo "$(RED)WARNING: This will remove ALL unused Docker volumes!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker volume prune -f; \
+		echo "$(GREEN)Unused volumes removed!$(NC)"; \
+	fi
+
+clean: ## Clean up containers, volumes, and cache
+	@echo "$(RED)WARNING: This will remove all containers, volumes, and cached data!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "$(YELLOW)Cleaning up...$(NC)"; \
+		docker compose -f $(COMPOSE_FILE) down -v; \
+		rm -rf vendor node_modules; \
+		rm -rf storage/logs/*.log; \
+		echo "$(GREEN)Cleanup complete!$(NC)"; \
+	fi
+
+#++++++++++++++++++++++ Artisan +++++++++++++++++++++++++++
+
+artisan: ## Run Artisan command (use CMD="command" syntax)
+	@docker compose -f $(COMPOSE_FILE) exec api php artisan $(CMD)
+
+cache-clear: ## Clear application cache
+	@echo "$(YELLOW)Clearing cache...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan cache:clear
+	docker compose -f $(COMPOSE_FILE) exec api php artisan config:clear
+	docker compose -f $(COMPOSE_FILE) exec api php artisan route:clear
+	docker compose -f $(COMPOSE_FILE) exec api php artisan view:clear
+	@echo "$(GREEN)Cache cleared!$(NC)"
+
+optimize: ## Optimize application
+	@echo "$(YELLOW)Optimizing application...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan config:cache
+	docker compose -f $(COMPOSE_FILE) exec api php artisan route:cache
+	docker compose -f $(COMPOSE_FILE) exec api php artisan view:cache
+	docker compose -f $(COMPOSE_FILE) exec api php artisan optimize
+	@echo "$(GREEN)Application optimized!$(NC)"
+
+#++++++++++++++++++++++ Vite +++++++++++++++++++++++++++
+
+start-vite: ## Start Vite dev server
+	@echo "$(YELLOW)Starting Vite dev server...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
+	@echo "$(GREEN)Vite dev server started in background!$(NC)"
+
+stop-vite: ## Stop Vite dev server
+	@echo "$(YELLOW)Stopping Vite dev server...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app pkill -f vite || true
+	@echo "$(GREEN)Vite dev server stopped!$(NC)"
+
+restart-vite: ## Restart Vite dev server
+	@make stop-vite
+	@sleep 2
+	@make start-vite
+
+#++++++++++++++++++++++ Database +++++++++++++++++++++++++++
+
+migrate: ## Run database migrations
+	@echo "$(YELLOW)Running database migrations...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan migrate
+	@echo "$(GREEN)Migrations complete!$(NC)"
+
+migrate-fresh: ## Fresh migration with seed
+	@echo "$(RED)WARNING: This will drop all tables!$(NC)"
+	@echo "$(YELLOW)Running fresh migrations...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan migrate:fresh --force
+	@echo "$(GREEN)Fresh migrations complete!$(NC)"
+
+migrate-fresh-seed: ## Fresh migration with seed
+	@echo "$(RED)WARNING: This will drop all tables!$(NC)"
+	@echo "$(YELLOW)Running fresh migrations with seed...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan migrate:fresh --seed --force
+	@echo "$(GREEN)Fresh migrations complete!$(NC)"
+
+migrate-rollback: ## Rollback last migration
+	@echo "$(YELLOW)Rolling back last migration...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan migrate:rollback
+	@echo "$(GREEN)Rollback complete!$(NC)"
+
+seed: ## Seed the database
+	@echo "$(YELLOW)Seeding database...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api php artisan db:seed
+	@echo "$(GREEN)Database seeded!$(NC)"
+
+# seed-db: ## Fresh DB, then Migrate and Seed with demo data
+# 	@echo "$(YELLOW)Freshing > Migrating > Seeding database with demo data...$(NC)"
+# 	@chmod +x scripts/seed-database.sh
+# 	@./scripts/seed-database.sh
+# 	@echo "$(GREEN)Permissions fixed!$(NC)"
+
+db-backup: ## Backup database (output: backup_YYYY-MM-DD_HH-MM-SS.sql)
+	@echo "$(YELLOW)Creating database backup...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec -T postgres pg_dump -U mediahub_user mediahub_db > backup_$$(date +%Y-%m-%d_%H-%M-%S).sql
+	@echo "$(GREEN)Backup created: backup_$$(date +%Y-%m-%d_%H-%M-%S).sql$(NC)"
+
+db-restore: ## Restore database from backup (use FILE=backup.sql)
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)Error: Please specify FILE=backup.sql$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)Restoring database from $(FILE)...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec -T postgres psql -U mediahub_user mediahub_db < $(FILE)
+	@echo "$(GREEN)Database restored!$(NC)"
+
+#++++++++++++++++++++++ Shell +++++++++++++++++++++++++++
+
+shell: ## Access api container shell
+	@docker compose -f $(COMPOSE_FILE) exec api sh
+
+tinker: ## Run tinker command in api container
+	docker compose -f $(COMPOSE_FILE) exec api php artisan tinker
+
+shell-app: ## Access app container shell
+	@docker compose -f $(COMPOSE_FILE) exec app sh
+
+shell-redis: ## Access redis container shell
+	@docker compose -f $(COMPOSE_FILE) exec redis sh
+
+shell-db: ## Access DB container shell
+	@docker compose -f $(COMPOSE_FILE) exec postgres sh
+
+#++++++++++++++++++++++ npm +++++++++++++++++++++++++++
+
+npm-install: ## Install NPM dependencies
+	@echo "$(YELLOW)Installing NPM dependencies (this may take 2-3 minutes)...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app npm install --prefer-offline --no-audit
+	@echo "$(GREEN)NPM dependencies installed!$(NC)"
+
+npm-update: ## Update NPM dependencies
+	@echo "$(YELLOW)Updating NPM dependencies...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app npm update
+	@echo "$(GREEN)NPM dependencies updated!$(NC)"
+
+npm: ## Run NPM command (use CMD="command" syntax)
+	@docker compose -f $(COMPOSE_FILE) exec app npm $(CMD)
+
+#++++++++++++++++++++++ Composer +++++++++++++++++++++++++++
+
+composer-install: ## Install Composer dependencies
+	@echo "$(YELLOW)Installing Composer dependencies...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api composer install --optimize-autoloader
+	@echo "$(GREEN)Composer dependencies installed!$(NC)"
+
+composer-update: ## Update Composer dependencies
+	@echo "$(YELLOW)Updating Composer dependencies...$(NC)"
+	docker compose -f $(COMPOSE_FILE) exec api composer update
+	@echo "$(GREEN)Composer dependencies updated!$(NC)"
+
+composer: ## Run Composer command (use CMD="command" syntax)
+	@docker compose -f $(COMPOSE_FILE) exec api composer $(CMD)
+
+#++++++++++++++++++++++ Logs +++++++++++++++++++++++++++
+
+logs: ## Show container logs (use CONTAINER=name for specific container)
+	@docker compose -f $(COMPOSE_FILE) logs -f $(CONTAINER)
+
+logs-api: ## Show api container logs
+	@docker compose -f $(COMPOSE_FILE) logs -f api
+
+logs-nginx-dev: ## Show nginx-dev container logs
+	@docker compose -f $(COMPOSE_FILE) logs -f nginx-dev
+
+logs-nginx-prod: ## Show nginx-prod container logs
+	@docker compose -f $(COMPOSE_FILE) logs -f nginx-prod
+
+logs-app: ## Show app container logs
+	@docker compose -f $(COMPOSE_FILE) logs -f app
+
+#++++++++++++++++++++++ XDebug +++++++++++++++++++++++++++
+
+xdebug-enable: ## Enable Xdebug
+	@echo "$(YELLOW)Enabling Xdebug...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec api sed -i 's/;zend_extension=xdebug/zend_extension=xdebug/' /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini || true
+	@docker compose -f $(COMPOSE_FILE) restart api
+	@echo "$(GREEN)Xdebug enabled!$(NC)"
+
+xdebug-disable: ## Disable Xdebug (better performance)
+	@echo "$(YELLOW)Disabling Xdebug...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec api sed -i 's/zend_extension=xdebug/;zend_extension=xdebug/' /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini || true
+	@docker compose -f $(COMPOSE_FILE) restart api
+	@echo "$(GREEN)Xdebug disabled!$(NC)"
+
+xdebug-status: ## Check Xdebug status
+	@docker compose -f $(COMPOSE_FILE) exec api php -v | grep -i xdebug || echo "Xdebug is not enabled"
+
+#++++++++++++++++++++++ Linters +++++++++++++++++++++++++++
+
+lint: ## Run ESLint
+	@echo "$(YELLOW)Running ESLint...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app npm run lint
+
+lint-fix: ## Fix ESLint issues
+	@echo "$(YELLOW)Fixing ESLint issues...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app npm run lint:fix
+
+format: ## Format code with Prettier
+	@echo "$(YELLOW)Formatting code...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) exec app npm run format

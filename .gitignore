@@ -1,0 +1,67 @@
+# IDE
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+nbproject/
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+/storage/logs/*
+!/storage/logs/.gitkeep
+/infrastructure/docker/nginx/logs/
+
+# Testing
+/coverage/
+/.phpunit.cache
+/tests/Browser/screenshots/
+/tests/Browser/console/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+*.swp
+
+# Build artifacts
+/public/mix-manifest.json
+
+# Xdebug
+xdebug.log
+
+# Database backups
+backup_*.sql
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# AI
+.ai/
+
+# bak
+.bak/
