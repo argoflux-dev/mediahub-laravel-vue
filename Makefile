@@ -48,12 +48,12 @@ install: ## Initial project installation (complete setup)
 	@echo "$(YELLOW)Starting complete project installation...$(NC)"
 	@make setup
 	@make dbuild
-# 	@make init-project
 	@make dup
 	@echo "$(YELLOW)Waiting for containers to be ready...$(NC)"
 	@sleep 10
-# 	@make permissions
-	@make composer-install
+	@make exec-scripts
+	@make laravel-install
+	@make permissions
 	@make npm-install
 	@make key-generate
 # 	@make seed-db
@@ -66,14 +66,35 @@ install: ## Initial project installation (complete setup)
 	@echo "  $(BLUE)Vite Dev:$(NC)    https://localhost:5174"
 	@echo "$(GREEN)============================================$(NC)"
 
-setup: ## Setup environment file
-	@if [ ! -f .env ]; then \
-		echo "$(YELLOW)Creating .env file...$(NC)"; \
-		cp .env.example .env; \
-		echo "$(GREEN).env file created$(NC)"; \
-	else \
-		echo "$(BLUE).env file already exists$(NC)"; \
-	fi
+setup: ## Setup environment and create symlinks
+    @# Step 1: creating .env if not exists
+    @if [ ! -f .env ]; then \
+        echo "Creating .env from .env.example..."; \
+        cp .env.example .env; \
+        echo ".env created - fill in your values before continuing!"; \
+    else \
+        echo ".env already exists"; \
+    fi
+    @# Step 2: symlink for backend (Laravel)
+    @if [ ! -L backend/.env ]; then \
+        ln -s ../.env backend/.env; \
+        echo "Symlink backend/.env -> ../.env created"; \
+    else \
+        echo "Symlink backend/.env already exists"; \
+    fi
+
+laravel-install: ## Install Laravel into backend/ if not already installed
+    @if [ ! -f "backend/artisan" ]; then \
+        if [ -f "backend/composer.json" ]; then \
+            echo "Found existing composer.json, running composer install..."; \
+            docker compose -f $(COMPOSE_FILE) exec api composer install --prefer-dist; \
+        else \
+            echo "Installing fresh Laravel..."; \
+            docker compose -f $(COMPOSE_FILE) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
+        fi \
+    else \
+        echo "Laravel already installed, skipping."; \
+    fi
 
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"
@@ -132,16 +153,10 @@ permissions: ## Fix storage and cache permissions
 	@./scripts/setup-permissions.sh
 	@echo "$(GREEN)Permissions fixed!$(NC)"
 
-# init-project: ## Project env and file structure initialisation
-# 	@echo "$(YELLOW)Project env and file structure initialisation...$(NC)"
-# 	@chmod +x scripts/init-project.sh
-# 	@./scripts/init-project.sh
-# 	@echo "$(GREEN)Project successfully initialized!$(NC)"
-
-# init-scripts: ## Make all scripts executable
-# 	@echo "$(YELLOW)Making scripts executable...$(NC)"
-# 	@chmod +x scripts/*.sh
-# 	@echo "$(GREEN)Scripts are now executable!$(NC)"
+exec-scripts: ## Make all scripts executable
+	@echo "$(YELLOW)Making scripts executable...$(NC)"
+	@chmod +x scripts/*.sh
+	@echo "$(GREEN)Scripts are now executable!$(NC)"
 
 #++++++++++++++++++++++ Docker +++++++++++++++++++++++++++
 
@@ -319,6 +334,9 @@ db-restore: ## Restore database from backup (use FILE=backup.sql)
 
 shell: ## Access api container shell
 	@docker compose -f $(COMPOSE_FILE) exec api sh
+
+shell-root: ## Access store container shell as root
+	@docker compose -f $(COMPOSE_FILE) exec -u root api sh
 
 tinker: ## Run tinker command in api container
 	docker compose -f $(COMPOSE_FILE) exec api php artisan tinker
