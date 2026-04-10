@@ -6,17 +6,27 @@
 .env.testing
 .env.production
 .phpunit.result.cache
+.phpactor.json
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
 Homestead.json
 Homestead.yaml
 auth.json
 npm-debug.log
 yarn-error.log
+*.log
 .DS_Store
+Thumbs.db
 
 # Storage (except structure)
 /storage/logs/*
 /storage/*.key
 /storage/media-library/
+/storage/pail
 /storage/framework/cache/data/*
 /storage/framework/sessions/*
 /storage/framework/views/*
