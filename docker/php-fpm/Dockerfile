@@ -62,11 +62,6 @@ RUN addgroup -g 1000 www && \
 # Copy application files
 COPY --chown=www:www . /var/www
 
-# Set proper permissions
-RUN chown -R www:www /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache
-
 # Switch to non-root user
 USER www
 

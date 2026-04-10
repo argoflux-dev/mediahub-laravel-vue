@@ -45,14 +45,16 @@ info: ## Show system information
 #++++++++++++++++++++++ Assembly and installation +++++++++++++++++++++++++++
 
 install: ## Initial project installation (complete setup)
+	@echo "$(YELLOW)Сleaning in case of reinstallation...$(NC)"
+	@make clean-for-reinstall
 	@echo "$(YELLOW)Starting complete project installation...$(NC)"
-	@make setup
 	@make dbuild
 	@make dup
 	@echo "$(YELLOW)Waiting for containers to be ready...$(NC)"
 	@sleep 10
 	@make exec-scripts
 	@make laravel-install
+	@make setup
 	@make permissions
 	@make npm-install
 	@make key-generate
@@ -66,35 +68,41 @@ install: ## Initial project installation (complete setup)
 	@echo "  $(BLUE)Vite Dev:$(NC)    https://localhost:5174"
 	@echo "$(GREEN)============================================$(NC)"
 
+clean-for-reinstall: ## Stop and remove containers and volumes before reinstall
+	@echo "Cleaning up before reinstall..."
+	@docker compose -f $(COMPOSE_FILE) --profile dev down -v 2>/dev/null || true
+	@docker compose -f $(COMPOSE_FILE) --profile prod down -v 2>/dev/null || true
+	@echo "Cleaning backend directory..."
+	@find backend/ -mindepth 1 -delete 2>/dev/null || true
+	@echo "Clean complete"
+
 setup: ## Setup environment and create symlinks
-    @# Step 1: creating .env if not exists
-    @if [ ! -f .env ]; then \
-        echo "Creating .env from .env.example..."; \
-        cp .env.example .env; \
-        echo ".env created - fill in your values before continuing!"; \
-    else \
-        echo ".env already exists"; \
-    fi
-    @# Step 2: symlink for backend (Laravel)
-    @if [ ! -L backend/.env ]; then \
-        ln -s ../.env backend/.env; \
-        echo "Symlink backend/.env -> ../.env created"; \
-    else \
-        echo "Symlink backend/.env already exists"; \
-    fi
+	@if [ ! -f .env ]; then \
+		echo "Creating .env from .env.example..."; \
+		cp .env.example .env; \
+		echo ".env created"; \
+	else \
+		echo ".env already exists"; \
+	fi
+	@if [ ! -L backend/.env ]; then \
+		ln -s ../.env backend/.env; \
+		echo "Symlink backend/.env created"; \
+	else \
+		echo "Symlink backend/.env already exists"; \
+	fi
 
 laravel-install: ## Install Laravel into backend/ if not already installed
-    @if [ ! -f "backend/artisan" ]; then \
-        if [ -f "backend/composer.json" ]; then \
-            echo "Found existing composer.json, running composer install..."; \
-            docker compose -f $(COMPOSE_FILE) exec api composer install --prefer-dist; \
-        else \
-            echo "Installing fresh Laravel..."; \
-            docker compose -f $(COMPOSE_FILE) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
-        fi \
-    else \
-        echo "Laravel already installed, skipping."; \
-    fi
+	@if [ ! -f "backend/artisan" ]; then \
+			if [ -f "backend/composer.json" ]; then \
+					echo "Found existing composer.json, running composer install..."; \
+					docker compose -f $(COMPOSE_FILE) exec api composer install --prefer-dist; \
+			else \
+					echo "Installing fresh Laravel..."; \
+					docker compose -f $(COMPOSE_FILE) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
+			fi \
+	else \
+			echo "Laravel already installed, skipping."; \
+	fi
 
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"
