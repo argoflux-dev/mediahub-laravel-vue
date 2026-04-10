@@ -38,8 +38,8 @@ info: ## Show system information
 	@docker compose -f $(COMPOSE_FILE) ps
 	@echo ""
 	@echo "$(YELLOW)Access URLs:$(NC)"
-	@echo "  $(BLUE)Application:$(NC)  https:$(APP_URL)"
-	@echo "  $(BLUE)Vite Dev:$(NC)     http://localhost:5174"
+	@echo "  $(BLUE)Application:$(NC)  $(API_URL)"
+	@echo "  $(BLUE)Vite Dev:$(NC)     $(APP_URL):5174"
 	@echo "$(GREEN)============================================$(NC)"
 
 #++++++++++++++++++++++ Assembly and installation +++++++++++++++++++++++++++
@@ -65,7 +65,7 @@ install: ## Initial project installation (complete setup)
 	@echo "$(GREEN)Installation complete!$(NC)"
 	@echo "$(YELLOW)Access points:$(NC)"
 	@echo "  $(BLUE)Api:$(NC) https:$(API_URL)"
-	@echo "  $(BLUE)Vite Dev:$(NC)    https://localhost:5174"
+	@echo "  $(BLUE)Vite Dev:$(NC)    $(APP_URL):5174"
 	@echo "$(GREEN)============================================$(NC)"
 
 clean-for-reinstall: ## Stop and remove containers and volumes before reinstall
@@ -78,18 +78,18 @@ clean-for-reinstall: ## Stop and remove containers and volumes before reinstall
 
 setup: ## Setup environment and create symlinks
 	@if [ ! -f .env ]; then \
-		echo "Creating .env from .env.example..."; \
+		echo "Creating root .env from .env.example..."; \
 		cp .env.example .env; \
-		echo ".env created"; \
+		echo "root .env created"; \
 	else \
-		echo ".env already exists"; \
+		echo "root .env already exists"; \
 	fi
-	@if [ ! -L backend/.env ]; then \
-		ln -s ../.env backend/.env; \
-		echo "Symlink backend/.env created"; \
-	else \
-		echo "Symlink backend/.env already exists"; \
-	fi
+	@rm -f backend/.env
+	@rm -f frontend/.env
+	@echo "Creating symlinks to shared .env..."
+	@docker exec mediahub_api sh -c 'ln -sf /env/.env /var/www/.env'
+	@docker exec mediahub_app sh -c 'ln -sf /env/.env /var/www/.env'
+	@echo "Symlinks created"
 
 laravel-install: ## Install Laravel into backend/ if not already installed
 	@if [ ! -f "backend/artisan" ]; then \
@@ -110,8 +110,8 @@ dev: ## Start development environment
 	@echo "$(GREEN)============================================$(NC)"
 	@echo "$(GREEN)Development environment started!$(NC)"
 	@echo "$(YELLOW)Access points:$(NC)"
-	@echo "  $(BLUE)Api:$(NC) https:$(API_URL)"
-	@echo "  $(BLUE)Vite Dev:$(NC)    https:$(APP_URL):5174"
+	@echo "  $(BLUE)Api:$(NC) $(API_URL)"
+	@echo "  $(BLUE)Vite Dev:$(NC) $(APP_URL):5174"
 	@echo "$(GREEN)============================================$(NC)"
 
 fbuild: ## Build assets for production
