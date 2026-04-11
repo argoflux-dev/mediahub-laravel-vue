@@ -1,29 +1,21 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+    plugins: [vue()],
+
     server: {
         host: '0.0.0.0',
         port: 5174,
         strictPort: true,
-        allowedHosts: ['app', 'mediahub.argoflux.com', 'localhost'],
-        watch: {
-            usePolling: true,
-            interval: 1000,
-        },
-        // hmr: {
-        //     protocol: 'wss',
-        //     host: 'mediahub.argoflux.com',
-        //     port: 443,
-        // },
-        watch: {
-            usePolling: true,
-            interval: 1000,
-        },
-        origin: 'https://mediahub.argoflux.com',
+        allowedHosts: [
+            'mediahub.argoflux.com'
+        ],
     },
     build: {
         manifest: 'manifest.json',
-        outDir: 'public/dist',
+        outDir: 'dist',
+        emptyOutDir: true,
         rollupOptions: {
             output: {
                 assetFileNames: 'assets/[name]-[hash][extname]',
