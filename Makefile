@@ -86,10 +86,10 @@ setup: ## Setup environment and create symlinks
 	fi
 	@rm -f backend/.env
 	@rm -f frontend/.env
-	@echo "Creating symlinks to shared .env..."
-	@docker exec mediahub_api sh -c 'ln -sf /env/.env /var/www/.env'
-	@docker exec mediahub_app sh -c 'ln -sf /env/.env /var/www/.env'
-	@echo "Symlinks created"
+	@echo "Creating symlink to shared .env..."
+	docker compose -f $(COMPOSE_FILE) exec app \
+	sh -c 'ln -sf /env/.env /var/www/.env'
+	@echo "Symlink created"
 
 laravel-install: ## Install Laravel into backend/ if not already installed
 	@if [ ! -f "backend/artisan" ]; then \
@@ -104,6 +104,20 @@ laravel-install: ## Install Laravel into backend/ if not already installed
 			echo "Laravel already installed, skipping."; \
 	fi
 
+vite-install: ## Create Vite + Vue project
+	@if [ ! -f "frontend/package.json" ]; then \
+		echo "Creating Vite project..."; \
+		docker compose -f $(COMPOSE_FILE) run --rm app sh -c "\
+			npm create vite@latest . && \
+			npm install"; \
+	else \
+		echo "Frontend already exists, skipping."; \
+	fi
+	@echo "Creating symlink to shared .env..."
+	docker compose -f $(COMPOSE_FILE) exec app \
+	sh -c 'ln -sf /env/.env /var/www/.env'
+	@echo "Symlink created"
+
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"
 	@make dup
@@ -117,9 +131,14 @@ dev: ## Start development environment
 fbuild: ## Build assets for production
 	@echo "$(YELLOW)Building assets for production...$(NC)"
 	rm -rf frontend/dist frontend/hot
+	# If fresh build needed (before deploy) add this row (clean node_modules):
+	# docker compose -f $(COMPOSE_FILE) exec app npm ci
 	@docker compose -f $(COMPOSE_FILE) --profile dev up -d app
 	@docker compose -f $(COMPOSE_FILE) exec app npm run build
 	@docker compose -f $(COMPOSE_FILE) stop app
+	# Alternative (CI-approach: create service container, build, stop & clean)
+	# the most slow & clean build method, use without up & stop container rows:
+	# docker compose -f $(COMPOSE_FILE) run --rm app sh -c "npm ci && npm run build"
 	@echo "$(GREEN)Production build complete!$(NC)"
 	@echo "$(BLUE)Built files are in frontend/dist/$(NC)"
 

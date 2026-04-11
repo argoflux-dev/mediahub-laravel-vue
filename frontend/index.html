@@ -1,62 +1,13 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Test Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: #0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            text-align: center;
-            border: 1px solid #0f0;
-            padding: 30px;
-            border-radius: 8px;
-        }
-
-        h1 {
-            margin-bottom: 10px;
-        }
-
-        .status {
-            font-size: 18px;
-            margin-top: 10px;
-        }
-
-        .time {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #aaa;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>✅ Server is working</h1>
-        <div class="status">Если ты видишь эту страницу — доступ есть</div>
-        <div class="time" id="time"></div>
-    </div>
-
-    <script>
-        // Показываем текущее время (чтобы убедиться, что не кэш)
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('time').textContent =
-                "Время: " + now.toLocaleString();
-        }
-
-        updateTime();
-        setInterval(updateTime, 1000);
-    </script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>www</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

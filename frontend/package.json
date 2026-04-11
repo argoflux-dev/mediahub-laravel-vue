@@ -1,13 +1,17 @@
 {
   "name": "mediahub-frontend",
-  "version": "0.1.0",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build"
   },
+  "dependencies": {
+    "vue": "^3.5.32"
+  },
   "devDependencies": {
-    "vite": "^6.0.0"
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite": "^8.0.4"
   }
 }
