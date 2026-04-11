@@ -1,5 +1,6 @@
 # React / Vue / Vite / TypeScript
 hot
+.bak
 *.local
 *.tsbuildinfo
 
