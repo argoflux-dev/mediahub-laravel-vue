@@ -6,10 +6,6 @@ services:
       dockerfile: docker/node/Dockerfile
     container_name: mediahub_app
     restart: unless-stopped
-    # environment:
-    #   - VITE_HOST=0.0.0.0
-    #   - VITE_PORT=5174
-      # - VITE_HMR_HOST=mediahub.argoflux.com
     working_dir: /var/www/frontend
     volumes:
       - ./frontend:/var/www/frontend

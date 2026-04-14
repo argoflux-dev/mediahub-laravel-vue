@@ -9,13 +9,14 @@ const data = ref({
   password: '',
 })
 
-function submit() {
-  axiosClient.get('/sanctum/csrf-cookie', { baseURL: '/' }).then(response => {
-    axiosClient.post("/login", data.value)
-    .then(response => {
-        router.push({name: 'Home'})
-    })
-  });
+async function submit() {
+  try {
+    await axiosClient.get('/sanctum/csrf-cookie');
+    await axiosClient.post('/login', data.value);
+    router.push({ name: 'Home' });
+  } catch (error) {
+    console.error(error);
+  }
 }
 </script>
 
