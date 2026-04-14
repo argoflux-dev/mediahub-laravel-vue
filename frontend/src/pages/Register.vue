@@ -1,23 +1,60 @@
 <script setup>
+import axiosClient from '../axios';
 import GuestLayout from '../components/GuestLayout.vue'
+import { ref } from 'vue'
+
+const data = ref({
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+})
+
+function submit() {
+  axiosClient.get('/sanctum/csrf-cookie', { baseURL: '/' }).then(response => {
+    axiosClient.post("/register", data.value)
+    // .then(response => {
+    //     console.log('Success:', response.data)
+    //   })
+    //   .catch(error => {
+    //     if (error.response?.status === 422) {
+    //       errors.value = error.response.data.errors
+    //       console.log('Validation errors:', errors.value)
+    //     }
+    //   })
+  });
+}
+
 </script>
 
 <template>
 	<GuestLayout>
 		<h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-white">Create new account</h2>
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-      <form class="space-y-4" action="#" method="POST">
+      <form @submit.prevent="submit" class="space-y-4">
         <div>
           <label for="name" class="block text-sm/6 text-left font-medium text-gray-100">Full name</label>
           <div class="mt-2">
-            <input name="name" id="name" required="" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
+            <input
+              name="name"
+              id="name"
+              required=""
+              v-model="data.name"
+              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
         </div>
 
         <div>
           <label for="email" class="block text-sm/6 text-left font-medium text-gray-100">Email address</label>
           <div class="mt-2">
-            <input type="email" name="email" id="email" autocomplete="email" required="" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
+            <input
+              type="email"
+              name="email"
+              id="email"
+              autocomplete="email"
+              required=""
+              v-model="data.email"
+              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
         </div>
 
@@ -26,16 +63,28 @@ import GuestLayout from '../components/GuestLayout.vue'
             <label for="password" class="block text-sm/6 font-medium text-gray-100">Password</label>
           </div>
           <div class="mt-2">
-            <input type="password" name="password" id="password" required="" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
+            <input
+              type="password"
+              name="password"
+              id="password"
+              required=""
+              v-model="data.password"
+              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
         </div>
 
         <div>
           <div class="flex items-center justify-between">
-            <label for="passwordCnf" class="block text-sm/6 font-medium text-gray-100">Confirm password</label>
+            <label for="password_confirmation" class="block text-sm/6 font-medium text-gray-100">Confirm password</label>
           </div>
           <div class="mt-2">
-            <input type="password" name="passwordCnf" id="passwordCnf" required="" class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
+            <input
+              type="password"
+              name="password_confirmation"
+              id="password_confirmation"
+              required=""
+              v-model="data.password_confirmation"
+              class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
         </div>
 
