@@ -6,17 +6,17 @@ services:
       dockerfile: docker/node/Dockerfile
     container_name: mediahub_app
     restart: unless-stopped
-    environment:
-      - VITE_APP_NAME="${APP_NAME}"
-      - VITE_HOST=0.0.0.0
-      - VITE_PORT=5174
-      - VITE_HMR_HOST=mediahub.argoflux.com
-    working_dir: /var/www
+    # environment:
+    #   - VITE_HOST=0.0.0.0
+    #   - VITE_PORT=5174
+      # - VITE_HMR_HOST=mediahub.argoflux.com
+    working_dir: /var/www/frontend
     volumes:
-      - ./frontend:/var/www
-      - ./.env:/env/.env:ro
+      - ./frontend:/var/www/frontend
     ports:
       - "127.0.0.1:5174:5174"
+    healthcheck:
+      disable: true
     networks:
       - mediahub_network
     profiles:
@@ -30,9 +30,9 @@ services:
         - ENABLE_XDEBUG=${ENABLE_XDEBUG:-true}
     container_name: mediahub_api
     restart: unless-stopped
-    working_dir: /var/www
+    working_dir: /var/www/backend
     volumes:
-      - ./backend:/var/www
+      - ./backend:/var/www/backend
       - ./.env:/env/.env:ro
       - ./docker/php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini
       - ./docker/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
@@ -80,8 +80,8 @@ services:
     container_name: mediahub_nginx_dev
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8081:80"
-      - "127.0.0.1:8445:443"
+      - "127.0.0.1:8081:80"    # frontend
+      - "127.0.0.1:8082:8080"  # backend
     volumes:
       - ./frontend:/var/www/frontend
       - ./backend:/var/www/backend
@@ -111,7 +111,6 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8081:80"
-      - "127.0.0.1:8445:443"
     volumes:
       - ./frontend:/var/www/frontend
       - ./backend:/var/www/backend
@@ -156,7 +155,7 @@ services:
       - dev
       - prod
 
-  # Redis for caching and sessions
+  # Redis for caching, sessions and queues
   redis:
     image: redis:7-alpine
     container_name: mediahub_redis

@@ -86,10 +86,6 @@ setup: ## Setup environment and create symlinks
 	fi
 	@rm -f backend/.env
 	@rm -f frontend/.env
-	@echo "Creating symlink to shared .env..."
-	docker compose -f $(COMPOSE_FILE) exec app \
-	sh -c 'ln -sf /env/.env /var/www/.env'
-	@echo "Symlink created"
 
 laravel-install: ## Install Laravel into backend/ if not already installed
 	@if [ ! -f "backend/artisan" ]; then \
@@ -131,6 +127,7 @@ dev: ## Start development environment
 fbuild: ## Build assets for production
 	@echo "$(YELLOW)Building assets for production...$(NC)"
 	rm -rf frontend/dist frontend/hot
+	sh scripts/sync-env.sh
 	# If fresh build needed (before deploy) add this row (clean node_modules):
 	# docker compose -f $(COMPOSE_FILE) exec app npm ci
 	@docker compose -f $(COMPOSE_FILE) --profile dev up -d app
@@ -203,14 +200,17 @@ dbuild-quick: ## Build Docker containers (with cache)
 
 dup: ## Start Docker containers in dev mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
+	sh scripts/sync-env.sh
 	docker compose -f $(COMPOSE_FILE) --profile dev up -d
-	@docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
+	@sleep 5
+	docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
 	@echo "$(GREEN)Containers started!$(NC)"
 	@make ps
 
 pup: ## Start Docker containers in prod mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
-	rm -rf public/hot
+	rm -rf backend/public/hot
+	sh scripts/sync-env.sh
 	docker compose -f $(COMPOSE_FILE) --profile prod up -d
 	@echo "$(GREEN)Containers started!$(NC)"
 	@make ps

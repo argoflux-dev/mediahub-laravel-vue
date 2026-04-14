@@ -15,19 +15,6 @@ export default defineConfig({
         allowedHosts: [
             'mediahub.argoflux.com'
         ],
-        proxy: {
-            '/api': {
-                target: 'https://api.mediahub.argoflux.com',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, ''),
-                secure: true,
-            },
-            '/sanctum': {
-                target: 'https://api.mediahub.argoflux.com',
-                changeOrigin: true,
-                secure: true,
-            },
-        }
     },
     build: {
         manifest: 'manifest.json',

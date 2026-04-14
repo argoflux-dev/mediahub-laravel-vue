@@ -4,7 +4,7 @@ FROM php:8.4-fpm-alpine
 ARG ENABLE_XDEBUG=true
 
 # Set working directory
-WORKDIR /var/www
+WORKDIR /var/www/backend
 
 # Install system dependencies
 RUN apk add --no-cache \
