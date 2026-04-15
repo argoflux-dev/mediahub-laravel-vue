@@ -9,20 +9,28 @@ const data = ref({
   password: '',
 })
 
+const errorMessage = ref('')
+
 async function submit() {
-  try {
-    await axiosClient.get('/sanctum/csrf-cookie');
-    await axiosClient.post('/login', data.value);
-    router.push({ name: 'Home' });
-  } catch (error) {
-    console.error(error);
-  }
+  axiosClient.get('/sanctum/csrf-cookie').then(response => {
+    axiosClient.post("/login", data.value)
+      .then(response => {
+        router.push({name: 'Home'})
+      })
+      .catch(error => {
+        console.log(error)
+        errorMessage.value = error.response?.data?.message || 'Something went wrong';
+      })
+  });
 }
 </script>
 
 <template>
 	<GuestLayout>
 		<h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-white">Login to your account</h2>
+
+    <div v-if="errorMessage" class="text-white bg-red-500 text-center rounded px-3 py-2 mt-4">{{ errorMessage }}</div>
+
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
       <form @submit.prevent="submit" class="space-y-4">
         <div>

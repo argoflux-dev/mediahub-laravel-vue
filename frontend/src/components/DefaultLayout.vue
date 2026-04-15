@@ -90,22 +90,39 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
+import axiosClient from '../axios';
+import router from '../router';
+import useUserStore from "../store/user";
 
-const user = {
-  name: 'User',
-  email: 'user@example.com',
-  imageUrl:
-    'https://argoflux.com/img/ava.webp',
-}
+const userStore = useUserStore();
+
+const user = computed(() => ({
+  name: userStore.user?.name || '',
+  email: userStore.user?.email || '',
+  imageUrl: userStore.user?.imageUrl || '/profile-icon.webp'
+}))
+
+// {
+//   name: 'User',
+//   email: 'user@example.com',
+//   imageUrl:
+//     'https://argoflux.com/img/ava.webp',
+// }
 const navigation = [
   { name: 'Upload', to: {name: 'Home'} },
   { name: 'My Images', to: {name: 'My Images'} },
 ]
 
 function logout() {
-	console.log('logout')
+  axiosClient.get('/sanctum/csrf-cookie').then(() => {
+    axiosClient.post('/logout')
+      .then(() => {
+        router.push({ name: 'Login' })
+      })
+  })
 }
 </script>
 
