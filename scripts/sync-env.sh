@@ -1,11 +1,9 @@
 #!/bin/sh
 
-echo "SYNC ENV RUNNING"
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-ENV_FILE="$ROOT_DIR/.env"
+ENV_FILE="$ROOT_DIR/.env.prod"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
 # prod

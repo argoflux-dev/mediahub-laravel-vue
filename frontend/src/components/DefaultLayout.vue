@@ -113,7 +113,7 @@ const user = computed(() => ({
 // }
 const navigation = [
   { name: 'Upload', to: {name: 'Home'} },
-  { name: 'My Images', to: {name: 'My Images'} },
+  { name: 'MyImages', to: {name: 'MyImages'} },
 ]
 
 function logout() {

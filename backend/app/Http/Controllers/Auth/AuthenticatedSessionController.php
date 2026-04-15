@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\Request;
-// use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Response;
-// use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 class AuthenticatedSessionController extends Controller
@@ -24,7 +22,6 @@ class AuthenticatedSessionController extends Controller
         // For fullstack apps
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Success'], 200);
-            // return response()->noContent();
         }
 
         return response()->noContent();
