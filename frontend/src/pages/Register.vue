@@ -10,18 +10,21 @@ const data = ref({
   password_confirmation: '',
 })
 
+const errors = ref({
+  name: [],
+  email: [],
+  password: [],
+})
+
 function submit() {
-  axiosClient.get('/sanctum/csrf-cookie', { baseURL: '/' }).then(response => {
-    axiosClient.post("/register", data.value)
-    // .then(response => {
-    //     console.log('Success:', response.data)
-    //   })
-    //   .catch(error => {
-    //     if (error.response?.status === 422) {
-    //       errors.value = error.response.data.errors
-    //       console.log('Validation errors:', errors.value)
-    //     }
-    //   })
+  axiosClient.get('/sanctum/csrf-cookie').then(response => {
+    axiosClient.post('/register', data.value)
+      // .then(response => {
+      //   console.log('Success:', response.data)
+      // })
+      .catch(error => {
+        errors.value = error.response.data.errors;
+      })
   });
 }
 
@@ -38,10 +41,10 @@ function submit() {
             <input
               name="name"
               id="name"
-              required=""
               v-model="data.name"
               class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
+          <p v-if="errors.name?.length" class="text-red-500 text-left font-regular text-sm">{{ errors.name[0] }}</p>
         </div>
 
         <div>
@@ -52,10 +55,10 @@ function submit() {
               name="email"
               id="email"
               autocomplete="email"
-              required=""
               v-model="data.email"
               class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
+          <p v-if="errors.email?.length" class="text-red-500 text-left font-regular text-sm">{{ errors.email[0] }}</p>
         </div>
 
         <div>
@@ -67,10 +70,10 @@ function submit() {
               type="password"
               name="password"
               id="password"
-              required=""
               v-model="data.password"
               class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
+          <p v-if="errors.password?.length" class="text-red-500 text-left font-regular text-sm">{{ errors.password[0] }}</p>
         </div>
 
         <div>
@@ -82,7 +85,6 @@ function submit() {
               type="password"
               name="password_confirmation"
               id="password_confirmation"
-              required=""
               v-model="data.password_confirmation"
               class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
           </div>
