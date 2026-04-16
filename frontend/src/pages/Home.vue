@@ -36,7 +36,7 @@ import { PhotoIcon } from '@heroicons/vue/24/solid'
 				</div>
 			</div>
 			<div class="mb-4 flex w-full justify-end">
-				<button type="submit" class="min-w-[8rem] rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+				<button type="submit" class="min-w-[8rem] rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
 					Upload
 				</button>
 			</div>
