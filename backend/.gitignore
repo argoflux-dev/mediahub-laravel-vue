@@ -2,6 +2,8 @@
 /vendor/
 /node_modules/
 .env
+.env.dev
+.env.prod
 .env.backup
 .env.testing
 .env.production

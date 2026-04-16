@@ -1,7 +1,7 @@
 FROM node:22-alpine
 
 # Set working directory
-WORKDIR /var/www
+WORKDIR /var/www/frontend
 
 # Install system dependencies
 RUN apk add --no-cache \

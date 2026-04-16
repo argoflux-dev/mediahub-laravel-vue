@@ -26,16 +26,19 @@
 
               <!-- Profile dropdown -->
               <Menu as="div" class="relative ml-3">
-                <MenuButton class="relative flex max-w-xs items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+                <MenuButton class="relative flex max-w-xs items-center rounded-full pr-2
+                transition hover:ring-2 hover:ring-gray-400 hover:ring-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"">
                   <span class="absolute -inset-1.5"></span>
                   <span class="sr-only">Open user menu</span>
                   <img class="size-8 rounded-full outline -outline-offset-1 outline-white/10" :src="user.imageUrl" alt="" />
+                  <span class="text-white ml-3">{{  user.name }}</span>
                 </MenuButton>
 
                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform scale-100" leave-to-class="transform opacity-0 scale-95">
-                  <MenuItems class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-gray-800 py-1 outline-1 -outline-offset-1 outline-white/10">
+                  <MenuItems class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-gray-800 outline-1 -outline-offset-1 outline-white/10">
                     <MenuItem>
-                      <button @click="logout" :class="['block px-4 py-2 text-sm text-gray-300']">Logout</button>
+                      <button @click="logout" class="block w-full text-left px-4 py-3 text-sm text-gray-300
+                        hover:bg-white/5 hover:text-white transition">Logout</button>
                     </MenuItem>
                   </MenuItems>
                 </transition>
@@ -90,22 +93,39 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
+import axiosClient from '../axios';
+import router from '../router';
+import useUserStore from "../store/user";
 
-const user = {
-  name: 'User',
-  email: 'user@example.com',
-  imageUrl:
-    'https://argoflux.com/img/ava.webp',
-}
+const userStore = useUserStore();
+
+const user = computed(() => ({
+  name: userStore.user?.name || '',
+  email: userStore.user?.email || '',
+  imageUrl: userStore.user?.imageUrl || '/profile-icon.webp'
+}))
+
+// {
+//   name: 'User',
+//   email: 'user@example.com',
+//   imageUrl:
+//     'https://argoflux.com/img/ava.webp',
+// }
 const navigation = [
   { name: 'Upload', to: {name: 'Home'} },
-  { name: 'My Images', to: {name: 'My Images'} },
+  { name: 'MyImages', to: {name: 'MyImages'} },
 ]
 
 function logout() {
-	console.log('logout')
+  axiosClient.get('/sanctum/csrf-cookie').then(() => {
+    axiosClient.post('/logout')
+      .then(() => {
+        router.push({ name: 'Login' })
+      })
+  })
 }
 </script>
 

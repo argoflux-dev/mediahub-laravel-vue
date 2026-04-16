@@ -14,8 +14,13 @@ RED :=
 BLUE :=
 NC :=
 
-# Docker Compose file path
+# Docker Compose files path
 COMPOSE_FILE := docker-compose.yml
+COMPOSE_FILE_DEV := docker-compose.dev.yml
+
+# Docker Compose Commands
+COMPOSE_PROD = docker compose --env-file .env.prod -f $(COMPOSE_FILE)
+COMPOSE_DEV  = docker compose --env-file .env.dev -f $(COMPOSE_FILE) -f $(COMPOSE_FILE_DEV)
 
 # Load .env file
 ifneq (,$(wildcard .env))
@@ -79,17 +84,15 @@ clean-for-reinstall: ## Stop and remove containers and volumes before reinstall
 setup: ## Setup environment and create symlinks
 	@if [ ! -f .env ]; then \
 		echo "Creating root .env from .env.example..."; \
-		cp .env.example .env; \
-		echo "root .env created"; \
+		cp .env.dev.example .env.dev; \
+		cp .env.prod.example .env.prod; \
+		echo "root .env files created"; \
 	else \
 		echo "root .env already exists"; \
 	fi
-	@rm -f backend/.env
-	@rm -f frontend/.env
-	@echo "Creating symlink to shared .env..."
-	docker compose -f $(COMPOSE_FILE) exec app \
-	sh -c 'ln -sf /env/.env /var/www/.env'
-	@echo "Symlink created"
+	@ln -s .env.prod .env
+	@rm -f backend/.env.*
+	@rm -f frontend/.env.*
 
 laravel-install: ## Install Laravel into backend/ if not already installed
 	@if [ ! -f "backend/artisan" ]; then \
@@ -113,10 +116,6 @@ vite-install: ## Create Vite + Vue project
 	else \
 		echo "Frontend already exists, skipping."; \
 	fi
-	@echo "Creating symlink to shared .env..."
-	docker compose -f $(COMPOSE_FILE) exec app \
-	sh -c 'ln -sf /env/.env /var/www/.env'
-	@echo "Symlink created"
 
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"
@@ -124,13 +123,14 @@ dev: ## Start development environment
 	@echo "$(GREEN)============================================$(NC)"
 	@echo "$(GREEN)Development environment started!$(NC)"
 	@echo "$(YELLOW)Access points:$(NC)"
-	@echo "  $(BLUE)Api:$(NC) $(API_URL)"
-	@echo "  $(BLUE)Vite Dev:$(NC) $(APP_URL):5174"
+	@echo "  $(BLUE)Vite:	http://localhost:5174"
+	@echo "  $(BLUE)Api:	http://localhost:8082"
 	@echo "$(GREEN)============================================$(NC)"
 
 fbuild: ## Build assets for production
 	@echo "$(YELLOW)Building assets for production...$(NC)"
 	rm -rf frontend/dist frontend/hot
+	sh scripts/sync-env.sh
 	# If fresh build needed (before deploy) add this row (clean node_modules):
 	# docker compose -f $(COMPOSE_FILE) exec app npm ci
 	@docker compose -f $(COMPOSE_FILE) --profile dev up -d app
@@ -188,7 +188,7 @@ exec-scripts: ## Make all scripts executable
 #++++++++++++++++++++++ Docker +++++++++++++++++++++++++++
 
 ps: ## Show running containers
-	@docker compose -f $(COMPOSE_FILE) ps
+	docker compose -f $(COMPOSE_FILE) ps
 
 stats: ## Show container resource usage
 	@docker stats --no-stream
@@ -203,26 +203,33 @@ dbuild-quick: ## Build Docker containers (with cache)
 
 dup: ## Start Docker containers in dev mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
-	docker compose -f $(COMPOSE_FILE) --profile dev up -d
-	@docker compose -f $(COMPOSE_FILE) exec -d app npm run dev
-	@echo "$(GREEN)Containers started!$(NC)"
+	sh scripts/sync-env.sh
+	$(COMPOSE_DEV) up -d
+	@echo "$(YELLOW)Cleaning Laravel cache...$(NC)"
+	@sleep 5
+	$(COMPOSE_DEV) exec api php artisan config:clear
+	$(COMPOSE_DEV) exec api php artisan route:clear
+	$(COMPOSE_DEV) exec api php artisan view:clear
+	@echo "$(YELLOW)Starting Vite...$(NC)"
+	$(COMPOSE_DEV) exec -d app npm run dev
+	@echo "$(GREEN)Dev containers started!$(NC)"
 	@make ps
 
-pup: ## Start Docker containers in prod mode
+up: ## Start Docker containers in prod mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
-	rm -rf public/hot
-	docker compose -f $(COMPOSE_FILE) --profile prod up -d
-	@echo "$(GREEN)Containers started!$(NC)"
+	rm -rf backend/public/hot
+	sh scripts/sync-env.sh
+	$(COMPOSE_PROD) up -d
+	@echo "$(YELLOW)Optimizing Laravel...$(NC)"
+	@sleep 3
+	$(COMPOSE_PROD) exec api php artisan config:cache
+	$(COMPOSE_PROD) exec api php artisan route:cache
+	@echo "$(GREEN)Prod containers started!$(NC)"
 	@make ps
 
-ddown: ## Stop Docker containers
+down: ## Stop Docker containers
 	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
-	docker compose -f $(COMPOSE_FILE) --profile dev down
-	@echo "$(GREEN)Containers stopped!$(NC)"
-
-pdown: ## Stop Docker containers
-	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
-	docker compose -f $(COMPOSE_FILE) --profile prod down
+	$(COMPOSE_DEV) down
 	@echo "$(GREEN)Containers stopped!$(NC)"
 
 down-v: ## Stop and remove all containers with volumes
@@ -237,13 +244,8 @@ restart: ## Restart Docker containers
 
 drestart: ## Restart Docker containers - development mode
 	@echo "$(YELLOW)Restarting containers - development mode...$(NC)"
-	@make ddown
+	@make down
 	@make dup
-
-prestart: ## Restart Docker containers - production mode
-	@echo "$(YELLOW)Restarting containers - production mode...$(NC)"
-	@make pdown
-	@make pup
 
 volumes-list: ## List all project volumes
 	@echo "$(YELLOW)Project volumes:$(NC)"
