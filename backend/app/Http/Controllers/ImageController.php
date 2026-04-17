@@ -58,6 +58,11 @@ class ImageController extends Controller
      */
     public function destroy(Image $image)
     {
+        $path = str_replace('/storage/', '', parse_url($image->path, PHP_URL_PATH));
+        // Delete the image file from storage
+        Storage::disk('public')->delete($path);
+
+        // Delete the image record from the database
         $image->delete();
 
         return response(null, 204);

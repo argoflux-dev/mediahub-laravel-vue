@@ -9,6 +9,16 @@ const data = ref({
 	'image': null,
 });
 
+const previewUrl = ref(null);
+
+function onFileChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  data.value.image = file;
+  previewUrl.value = URL.createObjectURL(file);
+}
+
 async function submit() {
 	const formData = new FormData();
 	formData.append('image', data.value.image);
@@ -17,6 +27,7 @@ async function submit() {
   axiosClient.get('/sanctum/csrf-cookie').then(response => {
     axiosClient.post("/api/image", formData)
       .then(response => {
+				URL.revokeObjectURL(previewUrl.value);
         router.push({name: 'MyImages'})
       })
       .catch(error => {
@@ -43,15 +54,22 @@ async function submit() {
 					<label for="file-upload" class="block text-sm/6 text-left font-medium text-white">Image</label>
 					<div class="mt-2 flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-10">
 						<div class="text-center">
-							<PhotoIcon class="mx-auto size-12 text-gray-600" aria-hidden="true" />
+
+							<template v-if="previewUrl">
+								<img :src="previewUrl" alt="Preview" class="mx-auto mb-4 max-h-48 rounded-lg object-contain" />
+							</template>
+							<template v-else>
+								<PhotoIcon class="mx-auto size-12 text-gray-600" aria-hidden="true" />
+							</template>
+
 							<div class="mt-4 flex text-sm/6 text-gray-400">
 								<label for="file-upload" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-indigo-400 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-indigo-500 hover:text-indigo-300">
-									<span>Upload a file</span>
+									<span>{{ previewUrl ? 'Change file' : 'Upload a file' }}</span>
 									<input
 										id="file-upload"
 										name="file-upload"
 										type="file"
-										@change="data.image = $event.target.files[0]"
+										@change="onFileChange"
 										class="sr-only" />
 								</label>
 								<p class="pl-1">or drag and drop</p>

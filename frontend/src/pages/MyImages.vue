@@ -4,6 +4,21 @@ import { ref, onMounted } from 'vue'
 
 const images = ref([]);
 
+async function copyImageUrl(url) {
+	await navigator.clipboard.writeText(url);
+	alert('Copied to clipboard');
+}
+
+function deleteImage(id) {
+	if(!confirm('Are you sure?')) {
+		return;
+	}
+	axiosClient.delete(`/api/image/${id}`)
+		.then((responce) => {
+			images.value = images.value.filter(image => image.id !== id);
+	})
+}
+
 onMounted(() => {
 	axiosClient.get('/sanctum/csrf-cookie').then(response => {
 		axiosClient.get('/api/image')
