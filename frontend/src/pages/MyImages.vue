@@ -9,24 +9,17 @@ async function copyImageUrl(url) {
 	alert('Copied to clipboard');
 }
 
-function deleteImage(id) {
-	if(!confirm('Are you sure?')) {
-		return;
-	}
-	axiosClient.delete(`/api/image/${id}`)
-		.then((responce) => {
-			images.value = images.value.filter(image => image.id !== id);
-	})
+async function deleteImage(id) {
+  if (!confirm('Are you sure?')) return;
+
+  await axiosClient.delete(`/api/image/${id}`);
+  images.value = images.value.filter(image => image.id !== id);
 }
 
-onMounted(() => {
-	axiosClient.get('/sanctum/csrf-cookie').then(response => {
-		axiosClient.get('/api/image')
-			.then((responce) => {
-				images.value = responce.data;
-			})
-	})
-})
+onMounted(async () => {
+  const response = await axiosClient.get('/api/image');
+  images.value = response.data;
+});
 
 </script>
 

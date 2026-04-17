@@ -16,16 +16,12 @@ const errors = ref({
   password: [],
 })
 
-function submit() {
-  axiosClient.get('/sanctum/csrf-cookie').then(response => {
-    axiosClient.post('/register', data.value)
-      // .then(response => {
-      //   console.log('Success:', response.data)
-      // })
-      .catch(error => {
-        errors.value = error.response.data.errors;
-      })
-  });
+async function submit() {
+  try {
+    await axiosClient.post('/register', data.value);
+  } catch (error) {
+    errors.value = error.response.data.errors;
+  }
 }
 
 </script>

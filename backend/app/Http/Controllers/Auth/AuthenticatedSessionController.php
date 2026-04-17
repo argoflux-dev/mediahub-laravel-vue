@@ -17,14 +17,18 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        // JWT-based authentication
+        $user = Auth::user();
+        $token = $user->createToken('primary')->plainTextToken;
 
-        // For fullstack apps
-        if ($request->wantsJson()) {
-            return response()->json(['message' => 'Success'], 200);
-        }
+        return response([
+            'user' => $user,
+            'token' => $token
+        ]);
 
-        return response()->noContent();
+        // Session-based authentication
+        // $request->session()->regenerate();
+        // return response()->noContent();
     }
 
     /**
@@ -32,11 +36,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): Response
     {
-        Auth::guard('web')->logout();
+        // JWT-based authentication
+        $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
+        // Session-based authentication
+        // Auth::guard('web')->logout();
+        // $request->session()->invalidate();
+        // $request->session()->regenerateToken();
 
         return response()->noContent();
     }
