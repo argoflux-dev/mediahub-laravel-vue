@@ -12,8 +12,8 @@ services:
       - ./.env.prod:/env/.env:ro
       - ./docker/php-fpm/php.ini:/usr/local/etc/php/conf.d/custom.ini
       - ./docker/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-    env_file:
-      - ./.env.prod
+    # env_file:
+    #   - ./.env.prod
     # environment:
     #   - APP_ENV=${APP_ENV:-production}
     #   - APP_DEBUG=${APP_DEBUG:-false}
