@@ -15,14 +15,26 @@ const axiosClient = axios.create({
 // 	config.headers.common = `Bearer ${localStorage.getItem('token')}`
 // })
 
+// Get the CSRF cookie once when loading the application.
+axiosClient.get('/sanctum/csrf-cookie').catch(() => {
+	console.error('Could not fetch CSRF cookie — server unavailable?');
+});
+
 axiosClient.interceptors.response.use((response) => {
 	return response;
 }, error => {
-	if (error.response && error.response.status === 401) {
+	const status = error.response?.status;
+
+	if (status === 401) {
 		if (router.currentRoute.value.name !== 'Login') {
 			router.push({ name: 'Login' });
 		}
 	}
+
+	if (status === 500) {
+		console.error('Server error:', error.response?.data);
+	}
+
 	throw error;
 })
 

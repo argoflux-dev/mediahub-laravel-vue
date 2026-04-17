@@ -20,20 +20,17 @@ function onFileChange(event) {
 }
 
 async function submit() {
-	const formData = new FormData();
-	formData.append('image', data.value.image);
-	formData.append('label', data.value.label);
+  const formData = new FormData();
+  formData.append('image', data.value.image);
+  formData.append('label', data.value.label);
 
-  axiosClient.get('/sanctum/csrf-cookie').then(response => {
-    axiosClient.post("/api/image", formData)
-      .then(response => {
-				URL.revokeObjectURL(previewUrl.value);
-        router.push({name: 'MyImages'})
-      })
-      .catch(error => {
-        errorMessage.value = error.response?.data?.message || 'Something went wrong';
-      })
-  });
+  try {
+    await axiosClient.post("/api/image", formData);
+    URL.revokeObjectURL(previewUrl.value);
+    router.push({ name: 'MyImages' });
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Something went wrong';
+  }
 }
 
 </script>

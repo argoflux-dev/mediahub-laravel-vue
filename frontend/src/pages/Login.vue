@@ -12,16 +12,14 @@ const data = ref({
 const errorMessage = ref('')
 
 async function submit() {
-  axiosClient.get('/sanctum/csrf-cookie').then(response => {
-    axiosClient.post("/login", data.value)
-      .then(response => {
-        router.push({name: 'Home'})
-      })
-      .catch(error => {
-        errorMessage.value = error.response?.data?.message || 'Something went wrong';
-      })
-  });
+  try {
+    await axiosClient.post("/login", data.value);
+    router.push({ name: 'Home' });
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Something went wrong';
+  }
 }
+
 </script>
 
 <template>
