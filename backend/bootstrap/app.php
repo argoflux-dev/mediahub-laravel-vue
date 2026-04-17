@@ -12,17 +12,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->statefulApi();
 
-        // $middleware->api(prepend: [
-        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        // ]);
+        // For JWT based authentication
+        $middleware->validateCsrfTokens(except: [
+            '/login',
+            '/logout',
+            '/register',
+            '/api/*',
+        ]);
+
+        // For session based authentication
+        // $middleware->statefulApi();
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
-
-        //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function ($request, $e) {

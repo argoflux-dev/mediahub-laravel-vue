@@ -108,24 +108,15 @@ const user = computed(() => ({
   imageUrl: userStore.user?.imageUrl || '/profile-icon.webp'
 }))
 
-// {
-//   name: 'User',
-//   email: 'user@example.com',
-//   imageUrl:
-//     'https://argoflux.com/img/ava.webp',
-// }
 const navigation = [
   { name: 'Upload', to: {name: 'Home'} },
   { name: 'MyImages', to: {name: 'MyImages'} },
 ]
 
-function logout() {
-  axiosClient.get('/sanctum/csrf-cookie').then(() => {
-    axiosClient.post('/logout')
-      .then(() => {
-        router.push({ name: 'Login' })
-      })
-  })
+async function logout() {
+  await axiosClient.post('/api/logout');
+  localStorage.removeItem('token');
+  router.push({ name: 'Login' });
 }
 </script>
 
