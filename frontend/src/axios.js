@@ -29,12 +29,6 @@ axiosClient.interceptors.response.use((response) => {
 }, error => {
 	const status = error.response?.status;
 
-	if (status === 401) {
-		if (router.currentRoute.value.name !== 'Login') {
-			router.push({ name: 'Login' });
-		}
-	}
-
 	if (status === 500) {
 		console.error('Server error:', error.response?.data);
 	}

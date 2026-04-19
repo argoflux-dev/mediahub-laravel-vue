@@ -15,9 +15,7 @@ async function submit() {
   try {
     const response = await axiosClient.post("/login", data.value);
     localStorage.setItem('token', response.data.token);
-    console.log('Token set:', localStorage.getItem('token'));
     await router.push({ name: 'Home' });
-    console.log('After push, token:', localStorage.getItem('token'));
   } catch (error) {
     errorMessage.value = error.response?.data?.message || 'Something went wrong';
   }

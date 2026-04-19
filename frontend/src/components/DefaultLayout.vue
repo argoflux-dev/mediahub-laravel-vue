@@ -1,3 +1,37 @@
+<script setup>
+import { computed } from 'vue'
+import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
+import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
+import axiosClient from '../axios';
+import router from '../router';
+import useUserStore from "../store/user";
+
+const userStore = useUserStore();
+
+const user = computed(() => ({
+  name: userStore.user?.name || '',
+  email: userStore.user?.email || '',
+  imageUrl: userStore.user?.imageUrl || '/profile-icon.webp'
+}))
+
+// const navigation = [
+//   { name: 'Gallery', to: {name: 'Home'} },
+//   { name: 'Upload', to: {name: 'Upload'} },
+// ]
+
+const navigation = computed(() => [
+  { name: 'Gallery', to: { name: 'Home' } },
+  ...(userStore.user ? [{ name: 'Upload', to: { name: 'Upload' } }] : [])
+])
+
+async function logout() {
+  await axiosClient.post('/api/logout');
+  localStorage.removeItem('token');
+  userStore.user = null;
+  router.push({ name: 'Home' });
+}
+</script>
+
 <template>
   <div class="min-h-full">
     <Disclosure as="nav" class="bg-gray-800/50" v-slot="{ open }">
@@ -24,14 +58,14 @@
           <div class="hidden md:block">
             <div class="ml-4 flex items-center md:ml-6">
 
-              <!-- Profile dropdown -->
-              <Menu as="div" class="relative ml-3">
+              <!-- Profile dropdown — only for authorized -->
+              <Menu v-if="userStore.user" as="div" class="relative ml-3">
                 <MenuButton class="relative flex max-w-xs items-center rounded-full pr-2
                 transition hover:ring-2 hover:ring-gray-400 hover:ring-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"">
                   <span class="absolute -inset-1.5"></span>
                   <span class="sr-only">Open user menu</span>
                   <img class="size-8 rounded-full outline -outline-offset-1 outline-white/10" :src="user.imageUrl" alt="" />
-                  <span class="text-white ml-3">{{  user.name }}</span>
+                  <span class="text-white ml-3">{{ user.name }}</span>
                 </MenuButton>
 
                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform scale-100" leave-to-class="transform opacity-0 scale-95">
@@ -43,6 +77,12 @@
                   </MenuItems>
                 </transition>
               </Menu>
+
+              <!-- Login button for Guests -->
+              <RouterLink v-else :to="{ name: 'Login' }"
+                class="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400">
+                Login
+              </RouterLink>
             </div>
           </div>
           <div class="-mr-2 flex md:hidden">
@@ -69,7 +109,9 @@
 							{{ item.name }}
 					</RouterLink>
         </div>
-        <div class="border-t border-white/10 pt-4 pb-3">
+
+        <!-- Profile — only for authorized -->
+        <div v-if="userStore.user" class="border-t border-white/10 pt-4 pb-3">
           <div class="flex items-center justify-center px-5">
             <div class="shrink-0">
               <img class="size-10 rounded-full outline -outline-offset-1 outline-white/10" :src="user.imageUrl" alt="" />
@@ -85,40 +127,21 @@
 						</DisclosureButton>
           </div>
         </div>
+
+        <!-- Login button for Guests -->
+          <div v-else class="border-t border-white/10 pt-4 pb-3 px-5">
+            <RouterLink :to="{ name: 'Login' }"
+              class="block w-full text-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400">
+              Login
+            </RouterLink>
+          </div>
+
       </DisclosurePanel>
     </Disclosure>
 
 		<RouterView />
   </div>
 </template>
-
-<script setup>
-import { computed } from 'vue'
-import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
-import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
-import axiosClient from '../axios';
-import router from '../router';
-import useUserStore from "../store/user";
-
-const userStore = useUserStore();
-
-const user = computed(() => ({
-  name: userStore.user?.name || '',
-  email: userStore.user?.email || '',
-  imageUrl: userStore.user?.imageUrl || '/profile-icon.webp'
-}))
-
-const navigation = [
-  { name: 'Upload', to: {name: 'Home'} },
-  { name: 'MyImages', to: {name: 'MyImages'} },
-]
-
-async function logout() {
-  await axiosClient.post('/api/logout');
-  localStorage.removeItem('token');
-  router.push({ name: 'Login' });
-}
-</script>
 
 <style scoped>
 

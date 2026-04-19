@@ -3,7 +3,7 @@ import DefaultLayout from "./components/DefaultLayout.vue"
 import Login from "./pages/Login.vue"
 import Register from "./pages/Register.vue"
 import Home from "./pages/Home.vue"
-import MyImages from "./pages/MyImages.vue"
+import Upload from "./pages/Upload.vue"
 import NotFound from "./pages/NotFound.vue"
 import useUserStore from "./store/user"
 
@@ -13,16 +13,20 @@ const routes = [
 		component: DefaultLayout,
 		children: [
 			{ path: '/', name: 'Home', component: Home },
-			{ path: '/images', name: 'MyImages', component: MyImages },
+			{
+				path: '/upload',
+				name: 'Upload',
+				component: Upload,
+				beforeEnter: (to, from, next) => {
+					const userStore = useUserStore();
+					userStore.user ? next() : next({ name: 'Login' });
+				}
+			},
 		],
 		beforeEnter: async (to, from, next) => {
-			try {
-				const userStore = useUserStore();
-				await userStore.fetchUser();
-				next();
-			} catch (error) {
-				next(false); // Cancel navigation if data fetching fails
-			}
+			const userStore = useUserStore();
+			await userStore.fetchUser();
+			next();
 		},
 	},
 	{
