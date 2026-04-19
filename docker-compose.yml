@@ -36,6 +36,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8081:80"
+      - "127.0.0.1:8082:8080"
     volumes:
       - ./frontend:/var/www/frontend
       - ./backend:/var/www/backend
@@ -77,7 +78,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for caching, sessions and queues
   redis:
     image: redis:7-alpine
     container_name: mediahub_redis
@@ -94,34 +94,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Queue for background jobs
-  # queue:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/php-fpm/Dockerfile
-  #   container_name: mediahub_queue
-  #   working_dir: /var/www
-  #   command: php artisan queue:work redis --queue=default,emails --tries=3 --timeout=90
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./backend:/var/www
-  #   env_file:
-  #     - ./backend/.env
-  #   environment:
-  #     - QUEUE_CONNECTION=redis
-  #     - REDIS_HOST=redis
-  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - mediahub_network
-  #   profiles:
-  #   - dev
-  #   - prod
 
 networks:
   mediahub_network:
