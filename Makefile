@@ -129,16 +129,15 @@ dev: ## Start development environment
 
 fbuild: ## Build assets for production
 	@echo "$(YELLOW)Building assets for production...$(NC)"
-	rm -rf frontend/dist frontend/hot
-	sh scripts/sync-env.sh
-	# If fresh build needed (before deploy) add this row (clean node_modules):
-	# docker compose -f $(COMPOSE_FILE) exec app npm ci
-	@docker compose -f $(COMPOSE_FILE) --profile dev up -d app
-	@docker compose -f $(COMPOSE_FILE) exec app npm run build
-	@docker compose -f $(COMPOSE_FILE) stop app
-	# Alternative (CI-approach: create service container, build, stop & clean)
-	# the most slow & clean build method, use without up & stop container rows:
-	# docker compose -f $(COMPOSE_FILE) run --rm app sh -c "npm ci && npm run build"
+	@rm -rf frontend/dist
+# If fresh build needed (before deploy) add this row (clean node_modules):
+	$(COMPOSE_DEV) up -d app
+	$(COMPOSE_DEV) exec app npm run build
+	$(COMPOSE_DEV) stop app
+# Alternative (CI-approach: create service container, build, stop & clean)
+# the most slow & clean build method, use without up & stop container rows:
+# @docker compose -f $(COMPOSE_FILE) exec app npm ci
+# @docker compose -f $(COMPOSE_FILE) run --rm app sh -c "npm ci && npm run build"
 	@echo "$(GREEN)Production build complete!$(NC)"
 	@echo "$(BLUE)Built files are in frontend/dist/$(NC)"
 
@@ -219,7 +218,7 @@ up: ## Start Docker containers in prod mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
 	rm -rf backend/public/hot
 	sh scripts/sync-env.sh
-	$(COMPOSE_PROD) up -d
+	$(COMPOSE_PROD) up -d --remove-orphans
 	@echo "$(YELLOW)Optimizing Laravel...$(NC)"
 	@sleep 3
 	$(COMPOSE_PROD) exec api php artisan config:cache

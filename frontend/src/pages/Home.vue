@@ -1,100 +1,68 @@
 <script setup>
-import { PhotoIcon } from '@heroicons/vue/24/solid'
-import { ref } from 'vue'
-import router from '../router';
 import axiosClient from '../axios';
+import { ref, onMounted, computed } from 'vue';
+import useUserStore from '../store/user';
 
-const data = ref({
-	'label': '',
-	'image': null,
+const userStore = useUserStore();
+const isAuthenticated = computed(() => !!userStore.user);
+const images = ref([]);
+
+async function copyImageUrl(url) {
+	await navigator.clipboard.writeText(url);
+	alert('Copied to clipboard');
+}
+
+async function deleteImage(id) {
+  if (!confirm('Are you sure?')) return;
+
+  await axiosClient.delete(`/api/images/${id}`);
+  images.value = images.value.filter(image => image.id !== id);
+}
+
+onMounted(async () => {
+  const response = await axiosClient.get('/api/images');
+  images.value = response.data;
 });
-
-const previewUrl = ref(null);
-
-function onFileChange(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  data.value.image = file;
-  previewUrl.value = URL.createObjectURL(file);
-}
-
-async function submit() {
-  const formData = new FormData();
-  formData.append('image', data.value.image);
-  formData.append('label', data.value.label);
-
-  try {
-    await axiosClient.post("/api/image", formData);
-    URL.revokeObjectURL(previewUrl.value);
-    router.push({ name: 'MyImages' });
-  } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'Something went wrong';
-  }
-}
 
 </script>
 
 <template>
-
 	<header class="relative bg-gray-800 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10">
 		<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 			<h1 class="text-3xl font-bold tracking-tight text-white">
-				Upload
+				Gallery
 			</h1>
 		</div>
 	</header>
 	<main>
 		<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-			<form @submit.prevent="submit">
-				<div class="mb-4">
-					<label for="file-upload" class="block text-sm/6 text-left font-medium text-white">Image</label>
-					<div class="mt-2 flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-10">
-						<div class="text-center">
-
-							<template v-if="previewUrl">
-								<img :src="previewUrl" alt="Preview" class="mx-auto mb-4 max-h-48 rounded-lg object-contain" />
-							</template>
-							<template v-else>
-								<PhotoIcon class="mx-auto size-12 text-gray-600" aria-hidden="true" />
-							</template>
-
-							<div class="mt-4 flex text-sm/6 text-gray-400">
-								<label for="file-upload" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-indigo-400 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-indigo-500 hover:text-indigo-300">
-									<span>{{ previewUrl ? 'Change file' : 'Upload a file' }}</span>
-									<input
-										id="file-upload"
-										name="file-upload"
-										type="file"
-										@change="onFileChange"
-										class="sr-only" />
-								</label>
-								<p class="pl-1">or drag and drop</p>
-							</div>
-							<p class="text-xs/5 text-gray-400">PNG, JPG, GIF up to 10MB</p>
+			<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+				<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+					<div v-for="image in images" :key="image.id" class="flex flex-col bg-white overflow-hidden shadow rounded-lg">
+						<img :src="image.url" alt="Image" class="w-full md:h-48 object-contain md:mt-1">
+						<div class="flex flex-col flex-1 px-4 py-4">
+							<!-- <h3 class="text-lg font-semibold text-gray-900">{{ image.name }}</h3> -->
+							<p class="text-md text-black font-bold mb-4">{{ image.label }}</p>
+							<div :class="['grid justify-between gap-2 mt-auto',
+								isAuthenticated ? 'grid-cols-2' : 'grid-cols-1']">
+								<button type="submit"
+												@click="copyImageUrl(image.url)"
+												class="min-w-[5rem] rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+									Copy Url
+								</button>
+								<button v-if="isAuthenticated"
+												type="submit"
+												@click="deleteImage(image.id)"
+												class="min-w-[5rem] rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500">
+									Delete
+								</button>
+            	</div>
 						</div>
 					</div>
 				</div>
-				<div class="mb-4">
-					<label for="label" class="block text-sm/6 text-left font-medium text-white">Label</label>
-					<div class="mt-2">
-						<input
-							type="text"
-							name="label"
-							id="label"
-							v-model="data.label"
-							class="block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6" />
-					</div>
-				</div>
-				<div class="mb-4 flex w-full justify-end">
-					<button type="submit" class="min-w-[8rem] rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
-						Upload
-					</button>
-				</div>
-			</form>
+			</div>
 		</div>
 	</main>
-
 </template>
 
 <style scoped>
