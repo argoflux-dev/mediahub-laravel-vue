@@ -53,69 +53,75 @@ install: ## Initial project installation (complete setup)
 	@echo "$(YELLOW)Сleaning in case of reinstallation...$(NC)"
 	@make clean-for-reinstall
 	@echo "$(YELLOW)Starting complete project installation...$(NC)"
+	@make setup
 	@make dbuild
 	@make dup
 	@echo "$(YELLOW)Waiting for containers to be ready...$(NC)"
 	@sleep 10
 	@make exec-scripts
-	@make laravel-install
-	@make setup
+	@make composer-setup
 	@make permissions
-	@make npm-install
 	@make key-generate
-# 	@make seed-db
 	@make storage-link
+# 	@make seed-db
+	@make npm-setup
 	@make start-vite
 	@echo "$(GREEN)============================================$(NC)"
 	@echo "$(GREEN)Installation complete!$(NC)"
 	@echo "$(YELLOW)Access points:$(NC)"
-	@echo "  $(BLUE)Api:$(NC) https:$(API_URL)"
-	@echo "  $(BLUE)Vite Dev:$(NC)    $(APP_URL):5174"
+	@echo "  $(BLUE)Vite:	http://localhost:5174"
+	@echo "  $(BLUE)Api:	http://localhost:8082"
 	@echo "$(GREEN)============================================$(NC)"
 
 clean-for-reinstall: ## Stop and remove containers and volumes before reinstall
 	@echo "Cleaning up before reinstall..."
-	@docker compose -f $(COMPOSE_FILE) --profile dev down -v 2>/dev/null || true
-	@docker compose -f $(COMPOSE_FILE) --profile prod down -v 2>/dev/null || true
-	@echo "Cleaning backend directory..."
-	@find backend/ -mindepth 1 -delete 2>/dev/null || true
-	@echo "Clean complete"
+	$(COMPOSE_DEV) down -v 2>/dev/null || true
 
 setup: ## Setup environment and create symlinks
-	@if [ ! -f .env ]; then \
-		echo "Creating root .env from .env.example..."; \
+	@if [ ! -f .env.dev ]; then \
 		cp .env.dev.example .env.dev; \
+		echo "Created .env.dev from example (dev passwords are set, change before prod)"; \
+	else \
+		echo ".env.dev already exists, skipping"; \
+	fi
+	@if [ ! -f .env.prod ]; then \
 		cp .env.prod.example .env.prod; \
-		echo "root .env files created"; \
+		echo "Created .env.prod — FILL IN PASSWORDS before deploying to production!"; \
 	else \
-		echo "root .env already exists"; \
+		echo ".env.prod already exists, skipping"; \
 	fi
-	@ln -s .env.prod .env
-	@rm -f backend/.env.*
-	@rm -f frontend/.env.*
-
-laravel-install: ## Install Laravel into backend/ if not already installed
-	@if [ ! -f "backend/artisan" ]; then \
-			if [ -f "backend/composer.json" ]; then \
-					echo "Found existing composer.json, running composer install..."; \
-					docker compose -f $(COMPOSE_FILE) exec api composer install --prefer-dist; \
-			else \
-					echo "Installing fresh Laravel..."; \
-					docker compose -f $(COMPOSE_FILE) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
-			fi \
+	@if [ ! -L .env ]; then \
+		ln -s .env.prod .env; \
+		echo "Symlink .env -> .env.prod created"; \
 	else \
-			echo "Laravel already installed, skipping."; \
+		echo "Symlink .env already exists"; \
 	fi
 
-vite-install: ## Create Vite + Vue project
-	@if [ ! -f "frontend/package.json" ]; then \
-		echo "Creating Vite project..."; \
-		docker compose -f $(COMPOSE_FILE) run --rm app sh -c "\
-			npm create vite@latest . && \
-			npm install"; \
-	else \
-		echo "Frontend already exists, skipping."; \
-	fi
+composer-setup: ## Install Laravel or run composer install if already exists
+    @if [ -f backend/artisan ]; then \
+        echo "Laravel already exists, running composer install..."; \
+        $(COMPOSE_DEV) exec api composer install --optimize-autoloader; \
+				$(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
+    else \
+        echo "Fresh Laravel install..."; \
+        find backend/ -mindepth 1 -delete 2>/dev/null || true; \
+        $(COMPOSE_DEV) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
+        $(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
+    fi
+    @echo "Laravel is ready!"
+
+npm-setup: ## Install npm deps or init vite project if frontend is empty
+    @if [ -f frontend/package.json ]; then \
+        echo "Frontend exists, running npm install..."; \
+        $(COMPOSE_DEV) exec app npm install --prefer-offline --no-audit; \
+    else \
+        echo "No frontend found, creating Vite project..."; \
+        find frontend/ -mindepth 1 -delete 2>/dev/null || true; \
+        $(COMPOSE_DEV) exec app npm create vite@latest . -- --template vue; \
+        $(COMPOSE_DEV) exec app npm install; \
+    fi
+    @sh scripts/sync-env.sh
+    @echo "Frontend is ready!"
 
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"
@@ -194,7 +200,7 @@ stats: ## Show container resource usage
 
 dbuild: ## Build Docker containers
 	@echo "$(YELLOW)Building Docker containers...$(NC)"
-	docker compose -f $(COMPOSE_FILE) build --no-cache
+	$(COMPOSE_DEV) build --no-cache
 
 dbuild-quick: ## Build Docker containers (with cache)
 	@echo "$(YELLOW)Building Docker containers (quick)...$(NC)"
@@ -202,7 +208,7 @@ dbuild-quick: ## Build Docker containers (with cache)
 
 dup: ## Start Docker containers in dev mode
 	@echo "$(YELLOW)Starting Docker containers...$(NC)"
-	sh scripts/sync-env.sh
+	@sh scripts/sync-env.sh
 	$(COMPOSE_DEV) up -d
 	@echo "$(YELLOW)Cleaning Laravel cache...$(NC)"
 	@sleep 5
@@ -382,16 +388,16 @@ shell-db: ## Access DB container shell
 
 npm-install: ## Install NPM dependencies
 	@echo "$(YELLOW)Installing NPM dependencies (this may take 2-3 minutes)...$(NC)"
-	@docker compose -f $(COMPOSE_FILE) exec app npm install --prefer-offline --no-audit
+	$(COMPOSE_DEV) exec app npm install --prefer-offline --no-audit
 	@echo "$(GREEN)NPM dependencies installed!$(NC)"
 
 npm-update: ## Update NPM dependencies
 	@echo "$(YELLOW)Updating NPM dependencies...$(NC)"
-	@docker compose -f $(COMPOSE_FILE) exec app npm update
+	$(COMPOSE_DEV) exec app npm update
 	@echo "$(GREEN)NPM dependencies updated!$(NC)"
 
 npm: ## Run NPM command (use CMD="command" syntax)
-	@docker compose -f $(COMPOSE_FILE) exec app npm $(CMD)
+	$(COMPOSE_DEV) exec app npm $(CMD)
 
 #++++++++++++++++++++++ Composer +++++++++++++++++++++++++++
 
