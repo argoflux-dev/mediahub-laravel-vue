@@ -8,6 +8,8 @@ const useUserStore = defineStore('user', {
 	actions: {
 		async fetchUser() {
 			try {
+				const token = localStorage.getItem('token');
+				if (!token) return;
 				const { data } = await axiosClient.get('/api/user');
 				this.user = data;
 			} catch {

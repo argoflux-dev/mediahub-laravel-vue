@@ -98,30 +98,30 @@ setup: ## Setup environment and create symlinks
 	fi
 
 composer-setup: ## Install Laravel or run composer install if already exists
-    @if [ -f backend/artisan ]; then \
-        echo "Laravel already exists, running composer install..."; \
-        $(COMPOSE_DEV) exec api composer install --optimize-autoloader; \
-				$(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
-    else \
-        echo "Fresh Laravel install..."; \
-        find backend/ -mindepth 1 -delete 2>/dev/null || true; \
-        $(COMPOSE_DEV) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
-        $(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
-    fi
-    @echo "Laravel is ready!"
+	@if [ -f backend/artisan ]; then \
+			echo "Laravel already exists, running composer install..."; \
+			$(COMPOSE_DEV) exec api composer install --optimize-autoloader; \
+			$(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
+	else \
+			echo "Fresh Laravel install..."; \
+			find backend/ -mindepth 1 -delete 2>/dev/null || true; \
+			$(COMPOSE_DEV) exec api composer create-project laravel/laravel=^12.0 . --prefer-dist; \
+			$(COMPOSE_DEV) exec api ln -sf /env/.env /var/www/backend/.env; \
+	fi
+	@echo "Laravel is ready!"
 
 npm-setup: ## Install npm deps or init vite project if frontend is empty
-    @if [ -f frontend/package.json ]; then \
-        echo "Frontend exists, running npm install..."; \
-        $(COMPOSE_DEV) exec app npm install --prefer-offline --no-audit; \
-    else \
-        echo "No frontend found, creating Vite project..."; \
-        find frontend/ -mindepth 1 -delete 2>/dev/null || true; \
-        $(COMPOSE_DEV) exec app npm create vite@latest . -- --template vue; \
-        $(COMPOSE_DEV) exec app npm install; \
-    fi
-    @sh scripts/sync-env.sh
-    @echo "Frontend is ready!"
+	@if [ -f frontend/package.json ]; then \
+			echo "Frontend exists, running npm install..."; \
+			$(COMPOSE_DEV) exec app npm install --prefer-offline --no-audit; \
+	else \
+			echo "No frontend found, creating Vite project..."; \
+			find frontend/ -mindepth 1 -delete 2>/dev/null || true; \
+			$(COMPOSE_DEV) exec app npm create vite@latest . -- --template vue; \
+			$(COMPOSE_DEV) exec app npm install; \
+	fi
+	@sh scripts/sync-env.sh
+	@echo "Frontend is ready!"
 
 dev: ## Start development environment
 	@echo "$(YELLOW)Starting development environment...$(NC)"

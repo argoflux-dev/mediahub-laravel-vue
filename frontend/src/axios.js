@@ -15,7 +15,10 @@ const axiosClient = axios.create({
 
 // For Token-based authentication
 axiosClient.interceptors.request.use(config => {
-	config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+	const token = localStorage.getItem('token');
+	if (token) {
+		config.headers.Authorization = `Bearer ${token}`;
+	}
 	return config;
 });
 

@@ -20,8 +20,8 @@ async function deleteImage(id) {
 }
 
 onMounted(async () => {
-  const response = await axiosClient.get('/api/images');
-  images.value = response.data;
+	const response = await axiosClient.get('/api/images');
+	images.value = response.data;
 });
 
 </script>
