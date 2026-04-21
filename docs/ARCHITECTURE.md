@@ -96,7 +96,7 @@ All API routes are prefixed with `/api`.
 
 ### Authentication Model
 
-Authentication uses **Laravel Sanctum** in token (JWT-like) mode — not the stateful SPA cookie mode.
+Authentication is implemented using Laravel Sanctum personal access tokens (stateless mode), rather than the stateful SPA cookie-based authentication.
 
 **Login flow:**
 1. Client `POST /login` with email + password

@@ -17,7 +17,7 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        // JWT-based authentication
+        // Token-based authentication
         $user = Auth::user();
         $token = $user->createToken('primary')->plainTextToken;
 
@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): Response
     {
-        // JWT-based authentication
+        // Token-based authentication
         $request->user()->currentAccessToken()->delete();
 
         // Session-based authentication

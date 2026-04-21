@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
 
-        // For JWT based authentication
+        // For token based authentication
         $middleware->validateCsrfTokens(except: [
             '/login',
             '/logout',

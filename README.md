@@ -14,7 +14,7 @@ A fullstack media management web application for uploading, browsing, and sharin
 
 - **Image gallery** — browse all uploaded images without authentication
 - **Secure upload** — authenticated users can upload images with optional labels
-- **JWT authentication** — token-based auth via Laravel Sanctum (Breeze scaffolding)
+- **Token-based authentication** — token-based auth via Laravel Sanctum (Breeze scaffolding)
 - **Image management** — delete images directly from the gallery
 - **Clipboard copy** — copy any image URL with one click
 - **SPA routing** — smooth client-side navigation with Vue Router
@@ -92,7 +92,7 @@ Run `make help` for the full list.
 
 ## 🔐 Authentication
 
-Authentication uses **JWT-style bearer tokens** issued by Laravel Sanctum. After login, the token is stored in `localStorage` and sent with every API request via an Axios interceptor. Session-based auth is scaffolded but disabled — see `backend/bootstrap/app.php` and `frontend/src/axios.js` for commented alternatives.
+Stateless token-based authentication (Laravel Sanctum) using Bearer authorization header. Tokens are persisted in localStorage and injected into requests via Axios interceptor. Session-based auth is scaffolded but disabled — see `backend/bootstrap/app.php` and `frontend/src/axios.js` for commented alternatives.
 
 ## 🤝 Contributing
 
